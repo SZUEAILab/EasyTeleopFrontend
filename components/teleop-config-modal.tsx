@@ -9,14 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
-import type { TeleopGroup, TeleopGroupTypeInfo, Device } from "@/lib/types"
+import type { TeleopGroup, TeleopGroupTypeInfo, Device, Node } from "@/lib/types"
 import { Loader2 } from "lucide-react"
 
 interface TeleopConfigModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   teleopGroup?: TeleopGroup
-  nodeId: number
+  nodeId?: number
+  nodes?: Node[]
   devices: Device[]
   onSuccess: () => void
 }
@@ -26,11 +27,13 @@ export function TeleopConfigModal({
   onOpenChange,
   teleopGroup,
   nodeId,
+  nodes,
   devices,
   onSuccess,
 }: TeleopConfigModalProps) {
   const [loading, setLoading] = useState(false)
   const [groupTypes, setGroupTypes] = useState<Record<string, TeleopGroupTypeInfo>>({})
+  const [selectedNodeId, setSelectedNodeId] = useState<number | undefined>(nodeId)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -40,8 +43,8 @@ export function TeleopConfigModal({
 
   useEffect(() => {
     if (open) {
-      loadGroupTypes()
       if (teleopGroup) {
+        setSelectedNodeId(teleopGroup.node_id)
         setFormData({
           name: teleopGroup.name,
           description: teleopGroup.description,
@@ -49,6 +52,7 @@ export function TeleopConfigModal({
           config: teleopGroup.config,
         })
       } else {
+        setSelectedNodeId(nodeId)
         setFormData({
           name: "",
           description: "",
@@ -57,11 +61,17 @@ export function TeleopConfigModal({
         })
       }
     }
-  }, [open, teleopGroup])
+  }, [open, teleopGroup, nodeId])
 
-  const loadGroupTypes = async () => {
+  useEffect(() => {
+    if (selectedNodeId) {
+      loadGroupTypes(selectedNodeId)
+    }
+  }, [selectedNodeId])
+
+  const loadGroupTypes = async (nId: number) => {
     try {
-      const types = await apiClient.getTeleopGroupTypes(nodeId)
+      const types = await apiClient.getTeleopGroupTypes(nId)
       setGroupTypes(types)
     } catch (error) {
       console.error("Failed to load group types:", error)
@@ -81,6 +91,14 @@ export function TeleopConfigModal({
       return
     }
 
+    if (!selectedNodeId) {
+      toast({
+        title: "请选择节点",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
     try {
       if (teleopGroup) {
@@ -91,7 +109,7 @@ export function TeleopConfigModal({
         })
       } else {
         await apiClient.createTeleopGroup({
-          node_id: nodeId,
+          node_id: selectedNodeId,
           ...formData,
         } as any)
         toast({
@@ -113,7 +131,8 @@ export function TeleopConfigModal({
   }
 
   const getDevicesByCategory = (category: string) => {
-    return devices.filter((d) => d.category === category)
+    if (!selectedNodeId) return []
+    return devices.filter((d) => d.node_id === selectedNodeId && d.category === category)
   }
 
   return (
@@ -124,6 +143,31 @@ export function TeleopConfigModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {nodes && nodes.length > 0 && !teleopGroup && (
+            <div className="space-y-2">
+              <Label htmlFor="node">所属节点 *</Label>
+              <Select
+                value={selectedNodeId?.toString()}
+                onValueChange={(value) => {
+                  setSelectedNodeId(Number.parseInt(value))
+                  setFormData({ ...formData, type: "", config: [] })
+                  setGroupTypes({})
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择节点" />
+                </SelectTrigger>
+                <SelectContent>
+                  {nodes.map((node) => (
+                    <SelectItem key={node.id} value={node.id.toString()}>
+                      节点 {node.id} - {node.uuid} {node.status === 1 ? "(在线)" : "(离线)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="name">遥操作组名称 *</Label>
             <Input
@@ -150,6 +194,7 @@ export function TeleopConfigModal({
             <Select
               value={formData.type}
               onValueChange={(value) => setFormData({ ...formData, type: value, config: [] })}
+              disabled={!selectedNodeId}
             >
               <SelectTrigger>
                 <SelectValue placeholder="选择类型" />
@@ -168,8 +213,8 @@ export function TeleopConfigModal({
           {currentTypeInfo && (
             <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
               <div className="mb-2">
-                <h4 className="text-sm font-medium">请选择要遥操的机器人类型</h4>
-                <p className="text-xs text-muted-foreground">已选择：{formData.type}</p>
+                <h4 className="text-sm font-medium">设备配置</h4>
+                <p className="text-xs text-muted-foreground">为遥操作组选择所需设备</p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -185,18 +230,24 @@ export function TeleopConfigModal({
                           newConfig[index] = Number.parseInt(value)
                           setFormData({ ...formData, config: newConfig })
                         }}
+                        disabled={!selectedNodeId || categoryDevices.length === 0}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="请选择" />
+                          <SelectValue placeholder={categoryDevices.length === 0 ? "暂无可用设备" : "请选择"} />
                         </SelectTrigger>
                         <SelectContent>
                           {categoryDevices.map((device) => (
                             <SelectItem key={device.id} value={device.id.toString()}>
-                              {device.name}
+                              {device.name} {device.status === 1 ? "(在线)" : "(离线)"}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {categoryDevices.length === 0 && selectedNodeId && (
+                        <p className="text-xs text-destructive">
+                          暂无可用的{configItem.category}设备，请先在设备管理中添加
+                        </p>
+                      )}
                     </div>
                   )
                 })}

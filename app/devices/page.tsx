@@ -1,14 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Plus, AlertCircle, SettingsIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Plus, Bot, Edit, Trash2 } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
+import { useToast } from "@/hooks/use-toast"
+import type { Device, Node } from "@/lib/types"
 import { DeviceConfigModal } from "@/components/device-config-modal"
-import { TeleopConfigModal } from "@/components/teleop-config-modal"
-import { RealTimeDeviceCard } from "@/components/real-time-device-card"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,23 +20,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { apiClient } from "@/lib/api-client"
-import { useToast } from "@/hooks/use-toast"
-import type { Device, TeleopGroup } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
 
-export default function DeviceManagementPage() {
+export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([])
-  const [teleopGroups, setTeleopGroups] = useState<TeleopGroup[]>([])
+  const [nodes, setNodes] = useState<Node[]>([])
   const [loading, setLoading] = useState(true)
   const [deviceModalOpen, setDeviceModalOpen] = useState(false)
-  const [teleopModalOpen, setTeleopModalOpen] = useState(false)
   const [editingDevice, setEditingDevice] = useState<Device | undefined>()
-  const [editingTeleop, setEditingTeleop] = useState<TeleopGroup | undefined>()
+  const [selectedNodeId, setSelectedNodeId] = useState<number | undefined>()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingDeviceId, setDeletingDeviceId] = useState<number | null>(null)
   const { toast } = useToast()
-
-  const nodeId = 1
 
   useEffect(() => {
     loadData()
@@ -44,9 +40,9 @@ export default function DeviceManagementPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [devicesData, groupsData] = await Promise.all([apiClient.getDevices(), apiClient.getTeleopGroups()])
+      const [devicesData, nodesData] = await Promise.all([apiClient.getDevices(), apiClient.getNodes()])
       setDevices(devicesData)
-      setTeleopGroups(groupsData)
+      setNodes(nodesData)
     } catch (error) {
       toast({
         title: "加载失败",
@@ -60,11 +56,13 @@ export default function DeviceManagementPage() {
 
   const handleAddDevice = () => {
     setEditingDevice(undefined)
+    setSelectedNodeId(undefined)
     setDeviceModalOpen(true)
   }
 
   const handleEditDevice = (device: Device) => {
     setEditingDevice(device)
+    setSelectedNodeId(device.node_id)
     setDeviceModalOpen(true)
   }
 
@@ -95,14 +93,27 @@ export default function DeviceManagementPage() {
     }
   }
 
-  const handleAddTeleop = () => {
-    setEditingTeleop(undefined)
-    setTeleopModalOpen(true)
+  const getStatusBadge = (status: 0 | 1 | 2) => {
+    switch (status) {
+      case 1:
+        return <Badge className="bg-success text-success-foreground">在线</Badge>
+      case 2:
+        return (
+          <Badge variant="outline" className="border-warning text-warning">
+            重连中
+          </Badge>
+        )
+      default:
+        return (
+          <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
+            离线
+          </Badge>
+        )
+    }
   }
 
-  const handleEditTeleop = (group: TeleopGroup) => {
-    setEditingTeleop(group)
-    setTeleopModalOpen(true)
+  const getCategoryIcon = (category: string) => {
+    return <Bot className="h-5 w-5" />
   }
 
   if (loading) {
@@ -124,8 +135,6 @@ export default function DeviceManagementPage() {
     )
   }
 
-  const allDevicesOffline = devices.length > 0 && devices.every((d) => d.status === 0)
-
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -134,87 +143,77 @@ export default function DeviceManagementPage() {
         <main className="mt-14 p-6">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-foreground">设备管理</h1>
-              <p className="mt-1 text-sm text-muted-foreground">管理您的机器人设备和遥操作组</p>
+              <h1 className="text-2xl font-semibold text-foreground">设备管理</h1>
+              <p className="mt-1 text-sm text-muted-foreground">管理所有设备，包括在线和离线设备</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleAddDevice}>
-                <Plus className="mr-2 h-4 w-4" />
-                添加设备
-              </Button>
-              <Button onClick={handleAddTeleop}>
-                <Plus className="mr-2 h-4 w-4" />
-                创建遥操作组
-              </Button>
-            </div>
+            <Button onClick={handleAddDevice}>
+              <Plus className="mr-2 h-4 w-4" />
+              添加设备
+            </Button>
           </div>
 
-          {allDevicesOffline && (
-            <Card className="mb-6 border-warning/20 bg-warning/5 p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
-                  <AlertCircle className="h-5 w-5 text-warning" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-warning">所有设备离线</h3>
-                  <p className="mt-1 text-sm text-warning/80">当前没有设备在线，请检查设备连接状态</p>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          <div className="space-y-6">
-            {teleopGroups.map((group) => {
-              const groupDevices = devices.filter((d) => group.config.includes(d.id))
-
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {devices.map((device) => {
+              const node = nodes.find((n) => n.id === device.node_id)
               return (
-                <Card key={group.id} className="p-6">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-muted">
-                        <img src="/futuristic-helper-robot.png" alt={group.name} className="h-12 w-12 object-contain" />
+                <Card key={device.id} className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-lg ${
+                          device.status === 1 ? "bg-blue-50" : "bg-gray-50"
+                        }`}
+                      >
+                        {getCategoryIcon(device.category)}
                       </div>
                       <div>
-                        <h2 className="text-lg font-semibold text-foreground">{group.name}</h2>
-                        <p className="mt-0.5 text-sm text-muted-foreground">适配型号：{group.type}</p>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                          最近上线：{new Date(group.updated_at).toLocaleString("zh-CN")}
-                        </p>
+                        <h3 className="font-medium text-foreground">{device.name}</h3>
+                        <p className="text-xs text-muted-foreground">{device.type}</p>
                       </div>
                     </div>
-                    <Button variant="outline" onClick={() => handleEditTeleop(group)}>
-                      <SettingsIcon className="mr-2 h-4 w-4" />
-                      遥操配置
-                    </Button>
+                    {getStatusBadge(device.status)}
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {groupDevices.map((device) => (
-                      <RealTimeDeviceCard
-                        key={device.id}
-                        device={device}
-                        onEdit={handleEditDevice}
-                        onDelete={handleDeleteDevice}
-                      />
-                    ))}
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm text-muted-foreground">{device.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>节点: {node?.uuid || device.node_id}</span>
+                      <span>•</span>
+                      <span>{device.category}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 bg-transparent"
+                      onClick={() => handleEditDevice(device)}
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      编辑
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
+                      onClick={() => handleDeleteDevice(device.id)}
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      删除
+                    </Button>
                   </div>
                 </Card>
               )
             })}
           </div>
 
-          {teleopGroups.length === 0 && (
+          {devices.length === 0 && (
             <Card className="p-12">
               <div className="text-center">
-                <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                  <SettingsIcon className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-medium text-foreground">暂无遥操作组</h3>
-                <p className="mt-2 text-sm text-muted-foreground">开始添加您的第一个遥操作组</p>
-                <Button className="mt-4" onClick={handleAddTeleop}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  创建遥操作组
-                </Button>
+                <Bot className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 text-sm font-medium text-foreground">暂无设备</h3>
+                <p className="mt-2 text-sm text-muted-foreground">点击"添加设备"按钮添加新设备</p>
               </div>
             </Card>
           )}
@@ -225,24 +224,18 @@ export default function DeviceManagementPage() {
         open={deviceModalOpen}
         onOpenChange={setDeviceModalOpen}
         device={editingDevice}
-        nodeId={nodeId}
-        onSuccess={loadData}
-      />
-
-      <TeleopConfigModal
-        open={teleopModalOpen}
-        onOpenChange={setTeleopModalOpen}
-        teleopGroup={editingTeleop}
-        nodeId={nodeId}
-        devices={devices}
+        nodeId={selectedNodeId}
+        nodes={nodes}
         onSuccess={loadData}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除这设备信息吗？</AlertDialogTitle>
-            <AlertDialogDescription>一系列的信息将会被删除，可能会影响长，也可以仅停用标签。</AlertDialogDescription>
+            <AlertDialogTitle>确认删除设备信息吗？</AlertDialogTitle>
+            <AlertDialogDescription>
+              一系列的信息将会被删除，可能会影响相关遥操作组，也可以仅停用标签。
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>

@@ -9,22 +9,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
-import type { Device, DeviceTypeInfo } from "@/lib/types"
+import type { Device, DeviceTypeInfo, Node } from "@/lib/types"
 import { Loader2 } from "lucide-react"
 
 interface DeviceConfigModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   device?: Device
-  nodeId: number
+  nodeId?: number
+  nodes?: Node[]
   onSuccess: () => void
 }
 
-export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSuccess }: DeviceConfigModalProps) {
+export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, onSuccess }: DeviceConfigModalProps) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [categories, setCategories] = useState<string[]>([])
   const [deviceTypes, setDeviceTypes] = useState<Record<string, Record<string, DeviceTypeInfo>>>({})
+  const [selectedNodeId, setSelectedNodeId] = useState<number | undefined>(nodeId)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -35,8 +37,8 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
 
   useEffect(() => {
     if (open) {
-      loadDeviceInfo()
       if (device) {
+        setSelectedNodeId(device.node_id)
         setFormData({
           name: device.name,
           description: device.description,
@@ -45,6 +47,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
           config: device.config,
         })
       } else {
+        setSelectedNodeId(nodeId)
         setFormData({
           name: "",
           description: "",
@@ -54,11 +57,17 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
         })
       }
     }
-  }, [open, device])
+  }, [open, device, nodeId])
 
-  const loadDeviceInfo = async () => {
+  useEffect(() => {
+    if (selectedNodeId) {
+      loadDeviceInfo(selectedNodeId)
+    }
+  }, [selectedNodeId])
+
+  const loadDeviceInfo = async (nId: number) => {
     try {
-      const [cats, types] = await Promise.all([apiClient.getDeviceCategories(nodeId), apiClient.getDeviceTypes(nodeId)])
+      const [cats, types] = await Promise.all([apiClient.getDeviceCategories(nId), apiClient.getDeviceTypes(nId)])
       setCategories(cats)
       setDeviceTypes(types)
     } catch (error) {
@@ -71,10 +80,18 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
   const currentTypeInfo = formData.category && formData.type ? deviceTypes[formData.category]?.[formData.type] : null
 
   const handleTest = async () => {
+    if (!selectedNodeId) {
+      toast({
+        title: "请选择节点",
+        variant: "destructive",
+      })
+      return
+    }
+
     setTesting(true)
     try {
       await apiClient.testDevice({
-        node_id: nodeId,
+        node_id: selectedNodeId,
         name: formData.name,
         description: formData.description,
         category: formData.category as any,
@@ -83,7 +100,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
       })
       toast({
         title: "测试成功",
-        description: "设备配置成功",
+        description: "设备连接正常",
       })
     } catch (error) {
       toast({
@@ -105,6 +122,14 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
       return
     }
 
+    if (!selectedNodeId) {
+      toast({
+        title: "请选择节点",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
     try {
       if (device) {
@@ -115,7 +140,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
         })
       } else {
         await apiClient.createDevice({
-          node_id: nodeId,
+          node_id: selectedNodeId,
           ...formData,
         } as any)
         toast({
@@ -144,6 +169,30 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {nodes && nodes.length > 0 && !device && (
+            <div className="space-y-2">
+              <Label htmlFor="node">所属节点 *</Label>
+              <Select
+                value={selectedNodeId?.toString()}
+                onValueChange={(value) => {
+                  setSelectedNodeId(Number.parseInt(value))
+                  setFormData({ ...formData, category: "", type: "", config: {} })
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择节点" />
+                </SelectTrigger>
+                <SelectContent>
+                  {nodes.map((node) => (
+                    <SelectItem key={node.id} value={node.id.toString()}>
+                      节点 {node.id} - {node.uuid} {node.status === 1 ? "(在线)" : "(离线)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">设备名称 *</Label>
@@ -160,6 +209,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, onSucces
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value, type: "", config: {} })}
+                disabled={!selectedNodeId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="选择类别" />

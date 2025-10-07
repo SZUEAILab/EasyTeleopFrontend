@@ -7,24 +7,54 @@ import { Card } from "@/components/ui/card"
 import { Bot, Boxes, Activity, Server, Wifi } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
-import type { Device, TeleopGroup } from "@/lib/types"
+import type { Device, TeleopGroup, Node } from "@/lib/types"
+import { mqttClient } from "@/lib/mqtt-client"
+import cn from "classnames"
 
 export default function DashboardPage() {
   const [devices, setDevices] = useState<Device[]>([])
   const [teleopGroups, setTeleopGroups] = useState<TeleopGroup[]>([])
+  const [nodes, setNodes] = useState<Node[]>([])
   const [loading, setLoading] = useState(true)
+  const [onlineNodes, setOnlineNodes] = useState(0)
   const { toast } = useToast()
 
   useEffect(() => {
     loadData()
   }, [])
 
+  useEffect(() => {
+    if (nodes.length === 0) return
+
+    const unsubscribers: (() => void)[] = []
+    const statusMap = new Map<number, number>()
+
+    nodes.forEach((node) => {
+      const unsubscribe = mqttClient.subscribeNodeStatus(node.id, (status: number) => {
+        statusMap.set(node.id, status)
+        const count = Array.from(statusMap.values()).filter((s) => s === 1).length
+        setOnlineNodes(count)
+      })
+      unsubscribers.push(unsubscribe)
+    })
+
+    return () => {
+      unsubscribers.forEach((unsub) => unsub())
+    }
+  }, [nodes])
+
   const loadData = async () => {
     try {
       setLoading(true)
-      const [devicesData, groupsData] = await Promise.all([apiClient.getDevices(), apiClient.getTeleopGroups()])
+      const [devicesData, groupsData, nodesData] = await Promise.all([
+        apiClient.getDevices(),
+        apiClient.getTeleopGroups(),
+        apiClient.getNodes(),
+      ])
       setDevices(devicesData)
       setTeleopGroups(groupsData)
+      setNodes(nodesData)
+      setOnlineNodes(nodesData.filter((n) => n.status === 1).length)
     } catch (error) {
       toast({
         title: "加载失败",
@@ -36,7 +66,6 @@ export default function DashboardPage() {
     }
   }
 
-  const onlineDevices = devices.filter((d) => d.status === 1).length
   const totalDevices = devices.length
   const totalGroups = teleopGroups.length
 
@@ -94,7 +123,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">在线节点</p>
-                  <p className="mt-2 text-3xl font-semibold text-foreground">{onlineDevices}</p>
+                  <p className="mt-2 text-3xl font-semibold text-foreground">{onlineNodes}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50">
                   <Activity className="h-6 w-6 text-purple-500" />
@@ -128,11 +157,18 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">节点连接</p>
-                    <p className="text-xs text-muted-foreground">Node-1</p>
+                    <p className="text-xs text-muted-foreground">
+                      {onlineNodes} / {nodes.length} 在线
+                    </p>
                   </div>
                 </div>
-                <div className="rounded-full bg-success px-3 py-1 text-xs font-medium text-success-foreground">
-                  已连接
+                <div
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium",
+                    onlineNodes > 0 ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {onlineNodes > 0 ? "已连接" : "离线"}
                 </div>
               </div>
             </div>
