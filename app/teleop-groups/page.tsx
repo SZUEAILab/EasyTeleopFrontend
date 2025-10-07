@@ -11,19 +11,11 @@ import { useToast } from "@/hooks/use-toast"
 import type { TeleopGroup, Device, Node } from "@/lib/types"
 import { TeleopConfigModal } from "@/components/teleop-config-modal"
 import { Badge } from "@/components/ui/badge"
-import { useMqttTeleopStatus, useMqttCollectingStatus } from "@/hooks/use-mqtt-status"
+import { useMqttTeleopStatus, useMqttCollectingStatus, useMqttDeviceStatus } from "@/hooks/use-mqtt-status"
 
 function DeviceStatusCard({ device, nodeId }: { device: Device; nodeId: number }) {
-  const [status, setStatus] = useState(device.status)
-
-  useEffect(() => {
-    const unsubscribe = require("@/lib/mqtt-client").mqttClient.subscribeDeviceStatus(
-      nodeId,
-      device.id,
-      (newStatus: number) => setStatus(newStatus),
-    )
-    return unsubscribe
-  }, [nodeId, device.id])
+  // 使用MQTT状态替代数据库状态
+  const status = useMqttDeviceStatus(nodeId, device.id)
 
   return (
     <div className="flex items-center justify-between rounded-md border border-border bg-background p-2">
@@ -57,6 +49,7 @@ function TeleopGroupCard({
   onEdit: (group: TeleopGroup) => void
   actionLoading: number | null
 }) {
+  // 使用MQTT状态替代数据库状态
   const runningStatus = useMqttTeleopStatus(group.node_id, group.id)
   const collectingStatus = useMqttCollectingStatus(group.node_id, group.id)
 

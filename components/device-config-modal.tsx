@@ -185,7 +185,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
                 <SelectContent>
                   {nodes.map((node) => (
                     <SelectItem key={node.id} value={node.id.toString()}>
-                      节点 {node.id} - {node.uuid} {node.status === 1 ? "(在线)" : "(离线)"}
+                      节点 {node.id} - {node.uuid} {node.status === true ? "(在线)" : "(离线)"}
                     </SelectItem>
                   ))}
                 </SelectContent>

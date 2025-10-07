@@ -1,7 +1,7 @@
 export interface Node {
   id: number
   uuid: string
-  status: number
+  status: boolean
   created_at: string
   updated_at: string
 }

@@ -21,6 +21,101 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { useMqttDeviceStatus } from "@/hooks/use-mqtt-status"
+
+// 创建一个独立的组件来处理设备状态显示，确保Hook调用的一致性
+function DeviceStatusBadge({ nodeId, deviceId, initialStatus }: { nodeId: number; deviceId: number; initialStatus: 0 | 1 | 2 }) {
+  const mqttStatus = useMqttDeviceStatus(nodeId, deviceId)
+  const status = mqttStatus !== undefined ? mqttStatus : initialStatus
+
+  switch (status) {
+    case 1:
+      return <Badge className="bg-success text-success-foreground">在线</Badge>
+    case 2:
+      return (
+        <Badge variant="outline" className="border-warning text-warning">
+          重连中
+        </Badge>
+      )
+    default:
+      return (
+        <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
+          离线
+        </Badge>
+      )
+  }
+}
+
+// 创建一个独立的组件来处理设备卡片，确保Hook调用的一致性
+function DeviceCard({ 
+  device, 
+  node, 
+  onEdit, 
+  onDelete 
+}: { 
+  device: Device; 
+  node: Node | undefined; 
+  onEdit: (device: Device) => void;
+  onDelete: (id: number) => void;
+}) {
+  const mqttStatus = useMqttDeviceStatus(device.node_id, device.id)
+  const status = mqttStatus !== undefined ? mqttStatus : device.status
+
+  const getCategoryIcon = (category: string) => {
+    return <Bot className="h-5 w-5" />
+  }
+
+  return (
+    <Card key={device.id} className="p-6">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-12 w-12 items-center justify-center rounded-lg ${
+              status === 1 ? "bg-blue-50" : "bg-gray-50"
+            }`}
+          >
+            {getCategoryIcon(device.category)}
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground">{device.name}</h3>
+            <p className="text-xs text-muted-foreground">{device.type}</p>
+          </div>
+        </div>
+        <DeviceStatusBadge nodeId={device.node_id} deviceId={device.id} initialStatus={device.status} />
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <p className="text-sm text-muted-foreground">{device.description}</p>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>节点: {node?.uuid || device.node_id}</span>
+          <span>•</span>
+          <span>{device.category}</span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 bg-transparent"
+          onClick={() => onEdit(device)}
+        >
+          <Edit className="mr-1 h-3 w-3" />
+          编辑
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
+          onClick={() => onDelete(device.id)}
+        >
+          <Trash2 className="mr-1 h-3 w-3" />
+          删除
+        </Button>
+      </div>
+    </Card>
+  )
+}
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([])
@@ -32,6 +127,7 @@ export default function DevicesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingDeviceId, setDeletingDeviceId] = useState<number | null>(null)
   const { toast } = useToast()
+
 
   useEffect(() => {
     loadData()
@@ -156,54 +252,13 @@ export default function DevicesPage() {
             {devices.map((device) => {
               const node = nodes.find((n) => n.id === device.node_id)
               return (
-                <Card key={device.id} className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-lg ${
-                          device.status === 1 ? "bg-blue-50" : "bg-gray-50"
-                        }`}
-                      >
-                        {getCategoryIcon(device.category)}
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-foreground">{device.name}</h3>
-                        <p className="text-xs text-muted-foreground">{device.type}</p>
-                      </div>
-                    </div>
-                    {getStatusBadge(device.status)}
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm text-muted-foreground">{device.description}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>节点: {node?.uuid || device.node_id}</span>
-                      <span>•</span>
-                      <span>{device.category}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 bg-transparent"
-                      onClick={() => handleEditDevice(device)}
-                    >
-                      <Edit className="mr-1 h-3 w-3" />
-                      编辑
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
-                      onClick={() => handleDeleteDevice(device.id)}
-                    >
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      删除
-                    </Button>
-                  </div>
-                </Card>
+                <DeviceCard 
+                  key={device.id} 
+                  device={device} 
+                  node={node}
+                  onEdit={handleEditDevice}
+                  onDelete={handleDeleteDevice}
+                />
               )
             })}
           </div>
@@ -232,16 +287,12 @@ export default function DevicesPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除设备信息吗？</AlertDialogTitle>
-            <AlertDialogDescription>
-              一系列的信息将会被删除，可能会影响相关遥操作组，也可以仅停用标签。
-            </AlertDialogDescription>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>此操作不可撤销，确定要删除该设备吗？</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteDevice} className="bg-primary text-primary-foreground">
-              确定
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDeleteDevice}>确认</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
