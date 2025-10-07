@@ -132,7 +132,21 @@ export function TeleopConfigModal({
 
   const getDevicesByCategory = (category: string) => {
     if (!selectedNodeId) return []
-    return devices.filter((d) => d.node_id === selectedNodeId && d.category === category)
+    // 过滤出属于选定节点的设备
+    const nodeDevices = devices.filter((d) => d.node_id === selectedNodeId)
+    
+    // 如果没有该类别的设备，显示所有设备并标记类别不匹配
+    const categoryDevices = nodeDevices.filter((d) => d.category === category)
+    
+    // 调试信息，可以在控制台查看
+    console.log(`设备过滤信息: 
+      选定节点ID: ${selectedNodeId}
+      节点下总设备数: ${nodeDevices.length}
+      请求的设备类别: ${category}
+      匹配类别设备数: ${categoryDevices.length}
+      所有设备:`, devices)
+    
+    return categoryDevices
   }
 
   return (
@@ -165,6 +179,12 @@ export function TeleopConfigModal({
                   ))}
                 </SelectContent>
               </Select>
+              {/* 添加调试信息 */}
+              {selectedNodeId && (
+                <p className="text-xs text-muted-foreground">
+                  当前节点设备数: {devices.filter(d => d.node_id === selectedNodeId).length}
+                </p>
+              )}
             </div>
           )}
 
@@ -238,7 +258,8 @@ export function TeleopConfigModal({
                         <SelectContent>
                           {categoryDevices.map((device) => (
                             <SelectItem key={device.id} value={device.id.toString()}>
-                              {device.name} {device.status === 1 ? "(在线)" : "(离线)"}
+                              {device.name} 
+                              {/* {device.status === 1 ? "(在线)" : "(离线)"} */}
                             </SelectItem>
                           ))}
                         </SelectContent>
