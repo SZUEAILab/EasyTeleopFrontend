@@ -88,6 +88,16 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
       return
     }
 
+    // 创建包含默认值的配置
+    const configWithDefaults = { ...formData.config };
+    if (currentTypeInfo) {
+      Object.entries(currentTypeInfo.need_config).forEach(([key, config]) => {
+        if (configWithDefaults[key] === undefined && config.default !== undefined) {
+          configWithDefaults[key] = config.default;
+        }
+      });
+    }
+
     setTesting(true)
     try {
       await apiClient.testDevice({
@@ -96,7 +106,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
         description: formData.description,
         category: formData.category as any,
         type: formData.type,
-        config: formData.config,
+        config: configWithDefaults,
       })
       toast({
         title: "测试成功",
@@ -130,10 +140,33 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
       return
     }
 
+    // 创建包含默认值的配置
+    const configWithDefaults = { ...formData.config };
+    if (currentTypeInfo) {
+      Object.entries(currentTypeInfo.need_config).forEach(([key, config]) => {
+        if (configWithDefaults[key] === undefined && config.default !== undefined) {
+          configWithDefaults[key] = config.default;
+        }
+      });
+    }
+
     setLoading(true)
     try {
       if (device) {
-        await apiClient.updateDevice(device.id, formData)
+        // 创建一个新对象，正确处理category字段
+        const updateData: Partial<Omit<Device, "id" | "node_id" | "created_at" | "updated_at">> = {
+          name: formData.name,
+          description: formData.description,
+          type: formData.type,
+          config: configWithDefaults,
+        };
+        
+        // 只有当category不是空字符串时才添加到更新数据中
+        if (formData.category) {
+          updateData.category = formData.category as "VR" | "Robot" | "Camera";
+        }
+        
+        await apiClient.updateDevice(device.id, updateData)
         toast({
           title: "更新成功",
           description: "设备配置已更新",
@@ -142,6 +175,8 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
         await apiClient.createDevice({
           node_id: selectedNodeId,
           ...formData,
+          category: formData.category as "VR" | "Robot" | "Camera",
+          config: configWithDefaults
         } as any)
         toast({
           title: "添加成功",
@@ -190,6 +225,11 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
                   ))}
                 </SelectContent>
               </Select>
+              {selectedNodeId && !nodes.find(n => n.id === selectedNodeId)?.status && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                  注意：当前选择的节点处于离线状态，可能无法正常添加设备
+                </p>
+              )}
             </div>
           )}
 
