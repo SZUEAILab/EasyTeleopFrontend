@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
 import type { Device, DeviceTypeInfo, Node } from "@/lib/types"
-import { Loader2 } from "lucide-react"
+import { Loader2, CheckCircle } from "lucide-react"
 
 interface DeviceConfigModalProps {
   open: boolean
@@ -24,6 +24,7 @@ interface DeviceConfigModalProps {
 export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, onSuccess }: DeviceConfigModalProps) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [testSuccess, setTestSuccess] = useState(false)
   const [categories, setCategories] = useState<string[]>([])
   const [deviceTypes, setDeviceTypes] = useState<Record<string, Record<string, DeviceTypeInfo>>>({})
   const [selectedNodeId, setSelectedNodeId] = useState<number | undefined>(nodeId)
@@ -56,6 +57,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
           config: {},
         })
       }
+      setTestSuccess(false)
     }
   }, [open, device, nodeId])
 
@@ -108,11 +110,13 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
         type: formData.type,
         config: configWithDefaults,
       })
+      setTestSuccess(true)
       toast({
         title: "测试成功",
         description: "设备连接正常",
       })
     } catch (error) {
+      setTestSuccess(false)
       toast({
         title: "测试失败",
         description: error instanceof Error ? error.message : "请稍后重试",
@@ -135,6 +139,15 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
     if (!selectedNodeId) {
       toast({
         title: "请选择节点",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!testSuccess) {
+      toast({
+        title: "请先进行连通性测试",
+        description: "在提交配置前必须先通过连通性测试",
         variant: "destructive",
       })
       return
@@ -185,6 +198,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
       }
       onSuccess()
       onOpenChange(false)
+      setTestSuccess(false)
     } catch (error) {
       toast({
         title: device ? "更新失败" : "添加失败",
@@ -212,6 +226,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
                 onValueChange={(value) => {
                   setSelectedNodeId(Number.parseInt(value))
                   setFormData({ ...formData, category: "", type: "", config: {} })
+                  setTestSuccess(false)
                 }}
               >
                 <SelectTrigger>
@@ -300,7 +315,15 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
 
           {currentTypeInfo && Object.keys(currentTypeInfo.need_config).length > 0 && (
             <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
-              <h4 className="text-sm font-medium">设备配置</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">设备配置</h4>
+                {testSuccess && (
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                    测试通过
+                  </span>
+                )}
+              </div>
               {Object.entries(currentTypeInfo.need_config).map(([key, config]) => (
                 <div key={key} className="space-y-2">
                   <Label htmlFor={key}>
@@ -340,7 +363,10 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
               连通性测试
             </Button>
           )}
-          <Button onClick={handleSubmit} disabled={loading || testing}>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={loading || testing || !currentTypeInfo || (currentTypeInfo && Object.keys(currentTypeInfo.need_config).length > 0 && !testSuccess)}
+          >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             确定
           </Button>
