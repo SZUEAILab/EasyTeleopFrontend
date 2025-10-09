@@ -5,13 +5,23 @@ import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Play, Square, Boxes, Circle } from "lucide-react"
+import { Plus, Play, Square, Boxes, Circle, Trash } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import type { TeleopGroup, Device, Node } from "@/lib/types"
 import { TeleopConfigModal } from "@/components/teleop-config-modal"
 import { Badge } from "@/components/ui/badge"
 import { useMqttTeleopStatus, useMqttCollectingStatus, useMqttDeviceStatus } from "@/hooks/use-mqtt-status"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 function DeviceStatusCard({ device, nodeId }: { device: Device; nodeId: number }) {
   // 使用MQTT状态替代数据库状态
@@ -39,6 +49,7 @@ function TeleopGroupCard({
   onStart,
   onStop,
   onEdit,
+  onDelete,
   actionLoading,
 }: {
   group: TeleopGroup
@@ -47,6 +58,7 @@ function TeleopGroupCard({
   onStart: (id: number) => void
   onStop: (id: number) => void
   onEdit: (group: TeleopGroup) => void
+  onDelete: (id: number) => void
   actionLoading: number | null
 }) {
   // 使用MQTT状态替代数据库状态
@@ -56,84 +68,114 @@ function TeleopGroupCard({
   const isRunning = runningStatus === 1
   const isCollecting = collectingStatus === 1
   const groupDevices = devices.filter((d) => group.config.includes(d.id))
+  
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   return (
-    <Card className="flex flex-col p-6">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-12 w-12 items-center justify-center rounded-lg ${
-              isRunning ? "bg-green-50" : "bg-gray-50"
-            }`}
-          >
-            <Boxes className={`h-6 w-6 ${isRunning ? "text-green-500" : "text-gray-400"}`} />
-          </div>
-          <div>
-            <h3 className="font-medium text-foreground">{group.name}</h3>
-            <p className="text-xs text-muted-foreground">{group.type}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        <p className="text-sm text-muted-foreground">{group.description}</p>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">运行状态:</span>
-          <Badge variant={isRunning ? "default" : "outline"} className="gap-1">
-            <Circle className={`h-2 w-2 ${isRunning ? "fill-current" : ""}`} />
-            {isRunning ? "运行中" : "已停止"}
-          </Badge>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">数据采集:</span>
-          <Badge variant={isCollecting ? "default" : "outline"} className="gap-1">
-            <Circle className={`h-2 w-2 ${isCollecting ? "fill-current" : ""}`} />
-            {isCollecting ? "采集中" : "未采集"}
-          </Badge>
-        </div>
-
-        <div className="text-xs text-muted-foreground">
-          <div>节点: {node?.uuid || group.node_id}</div>
-          <div>设备数: {groupDevices.length}</div>
-        </div>
-
-        {groupDevices.length > 0 && (
-          <div className="space-y-2 pt-2">
-            <div className="text-xs font-medium text-foreground">关联设备:</div>
-            <div className="space-y-1.5">
-              {groupDevices.map((device) => (
-                <DeviceStatusCard key={device.id} device={device} nodeId={group.node_id} />
-              ))}
+    <>
+      <Card className="flex flex-col p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-lg ${
+                isRunning ? "bg-green-50" : "bg-gray-50"
+              }`}
+            >
+              <Boxes className={`h-6 w-6 ${isRunning ? "text-green-500" : "text-gray-400"}`} />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground">{group.name}</h3>
+              <p className="text-xs text-muted-foreground">{group.type}</p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="mt-4 flex gap-2">
-        {isRunning ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 bg-transparent"
-            onClick={() => onStop(group.id)}
-            disabled={actionLoading === group.id}
-          >
-            <Square className="mr-1 h-3 w-3" />
-            {actionLoading === group.id ? "停止中..." : "停止"}
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-muted-foreground">{group.description}</p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">运行状态:</span>
+            <Badge variant={isRunning ? "default" : "outline"} className="gap-1">
+              <Circle className={`h-2 w-2 ${isRunning ? "fill-current" : ""}`} />
+              {isRunning ? "运行中" : "已停止"}
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">数据采集:</span>
+            <Badge variant={isCollecting ? "default" : "outline"} className="gap-1">
+              <Circle className={`h-2 w-2 ${isCollecting ? "fill-current" : ""}`} />
+              {isCollecting ? "采集中" : "未采集"}
+            </Badge>
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            <div>节点: {node?.uuid || group.node_id}</div>
+            <div>设备数: {groupDevices.length}</div>
+          </div>
+
+          {groupDevices.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <div className="text-xs font-medium text-foreground">关联设备:</div>
+              <div className="space-y-1.5">
+                {groupDevices.map((device) => (
+                  <DeviceStatusCard key={device.id} device={device} nodeId={group.node_id} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          {isRunning ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 bg-transparent"
+              onClick={() => onStop(group.id)}
+              disabled={actionLoading === group.id}
+            >
+              <Square className="mr-1 h-3 w-3" />
+              {actionLoading === group.id ? "停止中..." : "停止"}
+            </Button>
+          ) : (
+            <Button size="sm" className="flex-1" onClick={() => onStart(group.id)} disabled={actionLoading === group.id}>
+              <Play className="mr-1 h-3 w-3" />
+              {actionLoading === group.id ? "启动中..." : "启动"}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => onEdit(group)}>
+            配置
           </Button>
-        ) : (
-          <Button size="sm" className="flex-1" onClick={() => onStart(group.id)} disabled={actionLoading === group.id}>
-            <Play className="mr-1 h-3 w-3" />
-            {actionLoading === group.id ? "启动中..." : "启动"}
+          <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)}>
+            <Trash className="h-3 w-3" />
           </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={() => onEdit(group)}>
-          配置
-        </Button>
-      </div>
-    </Card>
+        </div>
+      </Card>
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除遥操组 "{group.name}" 吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete(group.id);
+                setShowDeleteDialog(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -226,6 +268,26 @@ export default function TeleopGroupsPage() {
     }
   }
 
+  const handleDeleteTeleop = async (id: number) => {
+    try {
+      setActionLoading(id)
+      await apiClient.deleteTeleopGroup(id)
+      toast({
+        title: "删除成功",
+        description: "遥操作组已删除",
+      })
+      loadData()
+    } catch (error) {
+      toast({
+        title: "删除失败",
+        description: error instanceof Error ? error.message : "未知错误",
+        variant: "destructive",
+      })
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen">
@@ -274,6 +336,7 @@ export default function TeleopGroupsPage() {
                   onStart={handleStartTeleop}
                   onStop={handleStopTeleop}
                   onEdit={handleEditTeleop}
+                  onDelete={handleDeleteTeleop}
                   actionLoading={actionLoading}
                 />
               )
