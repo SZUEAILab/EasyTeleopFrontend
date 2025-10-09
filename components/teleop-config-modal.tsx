@@ -99,10 +99,23 @@ export function TeleopConfigModal({
       return
     }
 
+    // 处理配置项，将未选择的项设置为0
+    let processedConfig = [...formData.config];
+    if (currentTypeInfo) {
+      // 确保配置数组长度与需要的配置项数量一致
+      processedConfig = currentTypeInfo.need_config.map((_, index) => {
+        // 如果该位置没有值或者值为空字符串，则设置为0
+        return formData.config[index] ?? 0;
+      });
+    }
+
     setLoading(true)
     try {
       if (teleopGroup) {
-        await apiClient.updateTeleopGroup(teleopGroup.id, formData)
+        await apiClient.updateTeleopGroup(teleopGroup.id, {
+          ...formData,
+          config: processedConfig
+        })
         toast({
           title: "更新成功",
           description: "遥操作组配置已更新",
@@ -111,6 +124,7 @@ export function TeleopConfigModal({
         await apiClient.createTeleopGroup({
           node_id: selectedNodeId,
           ...formData,
+          config: processedConfig
         } as any)
         toast({
           title: "创建成功",
@@ -247,7 +261,7 @@ export function TeleopConfigModal({
                         value={formData.config[index]?.toString() || ""}
                         onValueChange={(value) => {
                           const newConfig = [...formData.config]
-                          newConfig[index] = Number.parseInt(value)
+                          newConfig[index] = Number.parseInt(value) || 0
                           setFormData({ ...formData, config: newConfig })
                         }}
                         disabled={!selectedNodeId || categoryDevices.length === 0}
@@ -256,6 +270,7 @@ export function TeleopConfigModal({
                           <SelectValue placeholder={categoryDevices.length === 0 ? "暂无可用设备" : "请选择"} />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="0">无</SelectItem>
                           {categoryDevices.map((device) => (
                             <SelectItem key={device.id} value={device.id.toString()}>
                               {device.name} 
