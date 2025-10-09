@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Settings, Database, Boxes, ChevronDown, Server, Bot } from "lucide-react"
+import { LayoutDashboard, Settings, Database, Boxes, ChevronDown, Server, Bot, Headphones } from "lucide-react"
 import { useState } from "react"
 
 const navigation = [
@@ -22,6 +22,11 @@ const navigation = [
         icon: Server,
       },
       {
+        name: "VR头显管理",
+        href: "/vrs",
+        icon: Headphones,
+      },
+      {
         name: "设备管理",
         href: "/devices",
         icon: Bot,
@@ -30,7 +35,7 @@ const navigation = [
         name: "遥操组管理",
         href: "/teleop-groups",
         icon: Boxes,
-      },
+      }
     ],
   },
   {
