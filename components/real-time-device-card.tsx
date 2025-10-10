@@ -37,7 +37,30 @@ export function RealTimeDeviceCard({ device, onEdit, onDelete }: RealTimeDeviceC
           </Button>
         </div>
       </div>
-      <StatusBadge status={liveStatus} type="device" />
+      
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          <span className="font-medium">类型:</span> {device.type}
+        </div>
+        <StatusBadge status={liveStatus} type="device" />
+      </div>
+      
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <div>
+          <span className="font-medium">节点ID:</span> {device.node_id}
+        </div>
+        <div>
+          <span className="font-medium">分类:</span> {device.category}
+        </div>
+        <div>
+          <span className="font-medium">创建时间:</span>{" "}
+          {new Date(device.created_at).toLocaleString("zh-CN")}
+        </div>
+        <div>
+          <span className="font-medium">更新时间:</span>{" "}
+          {new Date(device.updated_at).toLocaleString("zh-CN")}
+        </div>
+      </div>
     </Card>
   )
 }

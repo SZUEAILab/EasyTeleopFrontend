@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Bot, Edit, Trash2 } from "lucide-react"
+import { Plus, Bot } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import type { Device, Node } from "@/lib/types"
@@ -20,102 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { useMqttDeviceStatus } from "@/hooks/use-mqtt-status"
-
-// 创建一个独立的组件来处理设备状态显示，确保Hook调用的一致性
-function DeviceStatusBadge({ nodeId, deviceId, initialStatus }: { nodeId: number; deviceId: number; initialStatus: 0 | 1 | 2 }) {
-  const mqttStatus = useMqttDeviceStatus(nodeId, deviceId)
-  const status = mqttStatus !== undefined ? mqttStatus : initialStatus
-
-  switch (status) {
-    case 1:
-      return <Badge className="bg-success text-success-foreground">在线</Badge>
-    case 2:
-      return (
-        <Badge variant="outline" className="border-warning text-warning">
-          重连中
-        </Badge>
-      )
-    default:
-      return (
-        <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
-          离线
-        </Badge>
-      )
-  }
-}
-
-// 创建一个独立的组件来处理设备卡片，确保Hook调用的一致性
-function DeviceCard({ 
-  device, 
-  node, 
-  onEdit, 
-  onDelete 
-}: { 
-  device: Device; 
-  node: Node | undefined; 
-  onEdit: (device: Device) => void;
-  onDelete: (id: number) => void;
-}) {
-  const mqttStatus = useMqttDeviceStatus(device.node_id, device.id)
-  const status = mqttStatus !== undefined ? mqttStatus : device.status
-
-  const getCategoryIcon = (category: string) => {
-    return <Bot className="h-5 w-5" />
-  }
-
-  return (
-    <Card key={device.id} className="p-6">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-12 w-12 items-center justify-center rounded-lg ${
-              status === 1 ? "bg-blue-50" : "bg-gray-50"
-            }`}
-          >
-            {getCategoryIcon(device.category)}
-          </div>
-          <div>
-            <h3 className="font-medium text-foreground">{device.name}</h3>
-            <p className="text-xs text-muted-foreground">{device.type}</p>
-          </div>
-        </div>
-        <DeviceStatusBadge nodeId={device.node_id} deviceId={device.id} initialStatus={device.status} />
-      </div>
-
-      <div className="mt-4 space-y-2">
-        <p className="text-sm text-muted-foreground">{device.description}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>节点: {node?.uuid || device.node_id}</span>
-          <span>•</span>
-          <span>{device.category}</span>
-        </div>
-      </div>
-
-      <div className="mt-4 flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 bg-transparent"
-          onClick={() => onEdit(device)}
-        >
-          <Edit className="mr-1 h-3 w-3" />
-          编辑
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
-          onClick={() => onDelete(device.id)}
-        >
-          <Trash2 className="mr-1 h-3 w-3" />
-          删除
-        </Button>
-      </div>
-    </Card>
-  )
-}
+import { RealTimeDeviceCard } from "@/components/real-time-device-card"
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([])
@@ -189,28 +94,6 @@ export default function DevicesPage() {
     }
   }
 
-  const getStatusBadge = (status: 0 | 1 | 2) => {
-    switch (status) {
-      case 1:
-        return <Badge className="bg-success text-success-foreground">在线</Badge>
-      case 2:
-        return (
-          <Badge variant="outline" className="border-warning text-warning">
-            重连中
-          </Badge>
-        )
-      default:
-        return (
-          <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
-            离线
-          </Badge>
-        )
-    }
-  }
-
-  const getCategoryIcon = (category: string) => {
-    return <Bot className="h-5 w-5" />
-  }
 
   if (loading) {
     return (
@@ -250,12 +133,10 @@ export default function DevicesPage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {devices.map((device) => {
-              const node = nodes.find((n) => n.id === device.node_id)
               return (
-                <DeviceCard 
+                <RealTimeDeviceCard 
                   key={device.id} 
-                  device={device} 
-                  node={node}
+                  device={device}
                   onEdit={handleEditDevice}
                   onDelete={handleDeleteDevice}
                 />
