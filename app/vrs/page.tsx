@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Bot } from "lucide-react"
+import { Plus, Bot, Trash2 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { config } from "@/lib/config"
 import { useToast } from "@/hooks/use-toast"
@@ -28,6 +28,16 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface VRHeadset {
   uuid: string
@@ -42,6 +52,8 @@ export default function VRHeadsetsPage() {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [headsetToDelete, setHeadsetToDelete] = useState<string | null>(null)
   const [editingHeadset, setEditingHeadset] = useState<VRHeadset | null>(null)
   const [formData, setFormData] = useState({
     uuid: "",
@@ -95,6 +107,40 @@ export default function VRHeadsetsPage() {
       info: JSON.stringify(headset.info, null, 2),
     })
     setDialogOpen(true)
+  }
+
+  const handleDeleteHeadset = (uuid: string) => {
+    setHeadsetToDelete(uuid)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteHeadset = async () => {
+    if (!headsetToDelete) return
+
+    try {
+      const response = await fetch(`${config.apiUrl}/api/vrs/${headsetToDelete}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("删除失败")
+      }
+
+      toast({
+        title: "删除成功",
+        description: "VR头显已删除",
+      })
+
+      setDeleteDialogOpen(false)
+      setHeadsetToDelete(null)
+      loadData()
+    } catch (error) {
+      toast({
+        title: "删除失败",
+        description: error instanceof Error ? error.message : "未知错误",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleSubmit = async () => {
@@ -236,14 +282,22 @@ export default function VRHeadsetsPage() {
                     )}
                   </div>
 
-                  <div className="mt-4">
+                  <div className="mt-4 flex gap-2">
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="w-full"
+                      className="flex-1"
                       onClick={() => handleEditHeadset(headset)}
                     >
                       配置
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleDeleteHeadset(headset.uuid)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </Card>
@@ -329,6 +383,23 @@ export default function VRHeadsetsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要删除这个VR头显吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteHeadset} className="bg-red-500 hover:bg-red-600">
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
