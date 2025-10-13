@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 interface VRHeadset {
+  id: number
   uuid: string
   device_id: number | null
   info: Record<string, any>
@@ -149,7 +150,7 @@ export default function VRHeadsetsPage() {
       
       if (editingHeadset) {
         // 更新VR头显
-        const response = await fetch(`${config.apiUrl}/api/vrs/${formData.uuid}`, {
+        const response = await fetch(`${config.apiUrl}/api/vrs/${editingHeadset.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -266,6 +267,7 @@ export default function VRHeadsetsPage() {
                   <div className="mt-4 space-y-2">
                     <div className="text-xs text-muted-foreground">
                       <div>UUID: {headset.uuid}</div>
+                      <div>设备: {device ? device.name : "未绑定"}</div>
                       <div>创建时间: {new Date(headset.created_at).toLocaleString()}</div>
                       <div>更新时间: {new Date(headset.updated_at).toLocaleString()}</div>
                     </div>
