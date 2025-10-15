@@ -110,8 +110,8 @@ export default function VRHeadsetsPage() {
     setDialogOpen(true)
   }
 
-  const handleDeleteHeadset = (uuid: string) => {
-    setHeadsetToDelete(uuid)
+  const handleDeleteHeadset = (id: number) => {
+    setHeadsetToDelete(id.toString())
     setDeleteDialogOpen(true)
   }
 
@@ -297,7 +297,7 @@ export default function VRHeadsetsPage() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => handleDeleteHeadset(headset.uuid)}
+                      onClick={() => handleDeleteHeadset(headset.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
