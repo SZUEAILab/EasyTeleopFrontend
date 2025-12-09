@@ -99,14 +99,11 @@ export function TeleopConfigModal({
       return
     }
 
-    // 处理配置项，将未选择的项设置为0
-    let processedConfig = [...formData.config];
+    let processedConfig = [...formData.config]
     if (currentTypeInfo) {
-      // 确保配置数组长度与需要的配置项数量一致
       processedConfig = currentTypeInfo.need_config.map((_, index) => {
-        // 如果该位置没有值或者值为空字符串，则设置为0
-        return formData.config[index] ?? 0;
-      });
+        return formData.config[index] ?? 0
+      })
     }
 
     setLoading(true)
@@ -114,7 +111,7 @@ export function TeleopConfigModal({
       if (teleopGroup) {
         await apiClient.updateTeleopGroup(teleopGroup.id, {
           ...formData,
-          config: processedConfig
+          config: processedConfig,
         })
         toast({
           title: "更新成功",
@@ -124,7 +121,7 @@ export function TeleopConfigModal({
         await apiClient.createTeleopGroup({
           node_id: selectedNodeId,
           ...formData,
-          config: processedConfig
+          config: processedConfig,
         } as any)
         toast({
           title: "创建成功",
@@ -146,22 +143,12 @@ export function TeleopConfigModal({
 
   const getDevicesByCategory = (category: string) => {
     if (!selectedNodeId) return []
-    // 过滤出属于选定节点的设备
     const nodeDevices = devices.filter((d) => d.node_id === selectedNodeId)
-    
-    // 如果没有该类别的设备，显示所有设备并标记类别不匹配
     const categoryDevices = nodeDevices.filter((d) => d.category === category)
-    
-    // 调试信息，可以在控制台查看
-    console.log(`设备过滤信息: 
-      选定节点ID: ${selectedNodeId}
-      节点下总设备数: ${nodeDevices.length}
-      请求的设备类别: ${category}
-      匹配类别设备数: ${categoryDevices.length}
-      所有设备:`, devices)
-    
     return categoryDevices
   }
+
+  const showNodeSelector = nodes && nodes.length > 0 && !teleopGroup
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -171,7 +158,7 @@ export function TeleopConfigModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {nodes && nodes.length > 0 && !teleopGroup && (
+          {showNodeSelector && (
             <div className="space-y-2">
               <Label htmlFor="node">所属节点 *</Label>
               <Select
@@ -193,10 +180,9 @@ export function TeleopConfigModal({
                   ))}
                 </SelectContent>
               </Select>
-              {/* 添加调试信息 */}
               {selectedNodeId && (
                 <p className="text-xs text-muted-foreground">
-                  当前节点设备数: {devices.filter(d => d.node_id === selectedNodeId).length}
+                  当前节点设备数: {devices.filter((d) => d.node_id === selectedNodeId).length}
                 </p>
               )}
             </div>
@@ -273,8 +259,7 @@ export function TeleopConfigModal({
                           <SelectItem value="0">无</SelectItem>
                           {categoryDevices.map((device) => (
                             <SelectItem key={device.id} value={device.id.toString()}>
-                              {device.name} 
-                              {/* {device.status === 1 ? "(在线)" : "(离线)"} */}
+                              {device.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

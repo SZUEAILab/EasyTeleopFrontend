@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Server, Wifi, WifiOff } from "lucide-react"
+import { Plus, Server, Wifi, WifiOff, Settings } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import type { Node } from "@/lib/types"
@@ -22,6 +23,7 @@ import { Label } from "@/components/ui/label"
 import { useMqttNodeStatus } from "@/hooks/use-mqtt-status"
 
 function NodeCard({ node }: { node: Node }) {
+  const router = useRouter()
   const mqttStatus = useMqttNodeStatus(node.id)
   const isOnline = mqttStatus === 1
 
@@ -45,13 +47,19 @@ function NodeCard({ node }: { node: Node }) {
       </div>
       <div className="mt-4 flex items-center justify-between">
         <span className="text-xs text-muted-foreground">{new Date(node.updated_at).toLocaleString("zh-CN")}</span>
-        <span
-          className={`rounded-full px-2 py-1 text-xs font-medium ${
-            isOnline ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {isOnline ? "在线" : "离线"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-1 text-xs font-medium ${
+              isOnline ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {isOnline ? "在线" : "离线"}
+          </span>
+          <Button variant="outline" size="sm" onClick={() => router.push(`/nodes/${node.id}`)}>
+            <Settings className="mr-1 h-3 w-3" />
+            管理
+          </Button>
+        </div>
       </div>
     </Card>
   )

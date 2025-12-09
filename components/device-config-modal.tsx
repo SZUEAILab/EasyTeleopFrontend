@@ -90,14 +90,13 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
       return
     }
 
-    // 创建包含默认值的配置
-    const configWithDefaults = { ...formData.config };
+    const configWithDefaults = { ...formData.config }
     if (currentTypeInfo) {
       Object.entries(currentTypeInfo.need_config).forEach(([key, config]) => {
         if (configWithDefaults[key] === undefined && config.default !== undefined) {
-          configWithDefaults[key] = config.default;
+          configWithDefaults[key] = config.default
         }
-      });
+      })
     }
 
     setTesting(true)
@@ -153,32 +152,29 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
       return
     }
 
-    // 创建包含默认值的配置
-    const configWithDefaults = { ...formData.config };
+    const configWithDefaults = { ...formData.config }
     if (currentTypeInfo) {
       Object.entries(currentTypeInfo.need_config).forEach(([key, config]) => {
         if (configWithDefaults[key] === undefined && config.default !== undefined) {
-          configWithDefaults[key] = config.default;
+          configWithDefaults[key] = config.default
         }
-      });
+      })
     }
 
     setLoading(true)
     try {
       if (device) {
-        // 创建一个新对象，正确处理category字段
         const updateData: Partial<Omit<Device, "id" | "node_id" | "created_at" | "updated_at">> = {
           name: formData.name,
           description: formData.description,
           type: formData.type,
           config: configWithDefaults,
-        };
-        
-        // 只有当category不是空字符串时才添加到更新数据中
-        if (formData.category) {
-          updateData.category = formData.category as "VR" | "Robot" | "Camera";
         }
-        
+
+        if (formData.category) {
+          updateData.category = formData.category as "VR" | "Robot" | "Camera"
+        }
+
         await apiClient.updateDevice(device.id, updateData)
         toast({
           title: "更新成功",
@@ -189,7 +185,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
           node_id: selectedNodeId,
           ...formData,
           category: formData.category as "VR" | "Robot" | "Camera",
-          config: configWithDefaults
+          config: configWithDefaults,
         } as any)
         toast({
           title: "添加成功",
@@ -210,6 +206,8 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
     }
   }
 
+  const showNodeSelector = nodes && nodes.length > 0 && !device
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -218,7 +216,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {nodes && nodes.length > 0 && !device && (
+          {showNodeSelector && (
             <div className="space-y-2">
               <Label htmlFor="node">所属节点 *</Label>
               <Select
@@ -240,7 +238,7 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
                   ))}
                 </SelectContent>
               </Select>
-              {selectedNodeId && !nodes.find(n => n.id === selectedNodeId)?.status && (
+              {selectedNodeId && !nodes.find((n) => n.id === selectedNodeId)?.status && (
                 <p className="text-xs text-yellow-600 dark:text-yellow-400">
                   注意：当前选择的节点处于离线状态，可能无法正常添加设备
                 </p>
@@ -363,9 +361,14 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
               连通性测试
             </Button>
           )}
-          <Button 
-            onClick={handleSubmit} 
-            disabled={loading || testing || !currentTypeInfo || (currentTypeInfo && Object.keys(currentTypeInfo.need_config).length > 0 && !testSuccess)}
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              loading ||
+              testing ||
+              !currentTypeInfo ||
+              (currentTypeInfo && Object.keys(currentTypeInfo.need_config).length > 0 && !testSuccess)
+            }
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             确定
