@@ -1,8 +1,14 @@
 import { config } from "./config"
 import type { Device, TeleopGroup, Node, DeviceTypeInfo, TeleopGroupTypeInfo } from "./types"
 
+export interface RpcMethodInfo {
+  name: string
+  description: string
+  params: Record<string, string> // param_name -> type (e.g., "string", "object", "number")
+}
+
 interface RpcMethodsResponse {
-  methods: string[]
+  methods: RpcMethodInfo[]
 }
 
 interface RpcCallResponse<T = unknown> {
@@ -57,7 +63,7 @@ class ApiClient {
     })
   }
 
-  async getNodeRpcMethods(nodeId: number): Promise<string[]> {
+  async getNodeRpcMethods(nodeId: number): Promise<RpcMethodInfo[]> {
     const response = await this.request<RpcMethodsResponse>(`/api/nodes/${nodeId}/rpc`)
     return response.methods
   }
