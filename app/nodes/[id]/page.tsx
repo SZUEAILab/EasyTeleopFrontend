@@ -14,6 +14,7 @@ import type { Device, TeleopGroup, Node } from "@/lib/types"
 import { DeviceConfigModal } from "@/components/device-config-modal"
 import { TeleopConfigModal } from "@/components/teleop-config-modal"
 import { RealTimeDeviceCard } from "@/components/real-time-device-card"
+import { RpcPanel } from "@/components/rpc-panel"
 import {
   useMqttNodeStatus,
   useMqttTeleopStatus,
@@ -442,6 +443,9 @@ export default function NodeDetailPage() {
               </div>
             </Card>
           </div>
+
+          {/* RPC Panel */}
+          <RpcPanel nodeId={nodeId} isNodeOnline={isNodeOnline} />
 
           {/* 设备管理区域 */}
           <div className="mb-8">

@@ -1,6 +1,19 @@
 import { config } from "./config"
 import type { Device, TeleopGroup, Node, DeviceTypeInfo, TeleopGroupTypeInfo } from "./types"
 
+interface RpcMethodsResponse {
+  methods: string[]
+}
+
+interface RpcCallResponse<T = unknown> {
+  result: T
+}
+
+interface RpcCallRequest {
+  method: string
+  params?: Record<string, unknown>
+}
+
 class ApiClient {
   private baseUrl: string
 
@@ -42,6 +55,23 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify({ uuid }),
     })
+  }
+
+  async getNodeRpcMethods(nodeId: number): Promise<string[]> {
+    const response = await this.request<RpcMethodsResponse>(`/api/nodes/${nodeId}/rpc`)
+    return response.methods
+  }
+
+  async callNodeRpc<T = unknown>(nodeId: number, method: string, params?: Record<string, unknown>): Promise<T> {
+    const body: RpcCallRequest = { method }
+    if (params) {
+      body.params = params
+    }
+    const response = await this.request<RpcCallResponse<T>>(`/api/nodes/${nodeId}/rpc`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    })
+    return response.result
   }
 
   // Device APIs
