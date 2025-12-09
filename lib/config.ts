@@ -1,9 +1,9 @@
 export const config = {
   // Backend API configuration
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://121.43.162.224:8000",
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
 
   // MQTT configuration
-  mqttUrl: process.env.NEXT_PUBLIC_MQTT_URL || "ws://121.43.162.224:8083/mqtt",
+  mqttUrl: process.env.NEXT_PUBLIC_MQTT_URL || "ws://localhost:8083/mqtt",
   mqttUsername: process.env.NEXT_PUBLIC_MQTT_USERNAME || "",
   mqttPassword: process.env.NEXT_PUBLIC_MQTT_PASSWORD || "",
 } as const
