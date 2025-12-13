@@ -1,5 +1,14 @@
 import { config } from "./config"
-import type { Device, TeleopGroup, Node, DeviceTypeInfo, TeleopGroupTypeInfo } from "./types"
+import type {
+  Device,
+  TeleopGroup,
+  Node,
+  DeviceTypeInfo,
+  TeleopGroupTypeInfo,
+  Hdf5Folder,
+  Hdf5File,
+  Hdf5ProcessResult,
+} from "./types"
 
 export interface RpcMethodInfo {
   name: string
@@ -183,6 +192,22 @@ class ApiClient {
   async stopTeleopGroup(id: number): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/api/teleop-groups/${id}/stop`, {
       method: "POST",
+    })
+  }
+
+  // HDF5 APIs
+  async getHdf5Folders(): Promise<Hdf5Folder[]> {
+    return this.request<Hdf5Folder[]>(`/api/hdf5/folders`)
+  }
+
+  async getHdf5Files(folder: string): Promise<Hdf5File[]> {
+    return this.request<Hdf5File[]>(`/api/hdf5/files/${encodeURIComponent(folder)}`)
+  }
+
+  async processHdf5(folder: string, filename: string): Promise<Hdf5ProcessResult> {
+    return this.request<Hdf5ProcessResult>(`/api/hdf5/process`, {
+      method: "POST",
+      body: JSON.stringify({ folder, filename }),
     })
   }
 }

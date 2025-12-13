@@ -65,6 +65,24 @@ export interface Recording {
   data_path: string
 }
 
+export interface Hdf5Folder {
+  name: string
+  hdf5_count: number
+}
+
+export interface Hdf5File {
+  name: string
+  size: string
+  folder: string
+}
+
+export interface Hdf5ProcessResult {
+  success: boolean
+  camera_images: Record<string, Array<{ index: number; data: string }>>
+  total_frames: number
+  camera_names: string[]
+}
+
 export type DeviceStatus = 0 | 1 | 2
 export type TeleopGroupStatus = 0 | 1
 export type CollectingStatus = 0 | 1
