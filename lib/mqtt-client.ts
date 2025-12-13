@@ -15,6 +15,23 @@ class MQTTClientManager {
   private callbacks: Map<string, Set<StatusCallback>> = new Map()
   private reconnectAttempts = 0
   private maxReconnectAttempts = 10
+  private subscribeTopic(topic: string) {
+    this.client?.subscribe(topic, (err) => {
+      if (err) {
+        console.error(`[MQTT] Subscribe error for ${topic}:`, err)
+      } else {
+        console.log(`[MQTT] Subscribed to ${topic}`)
+      }
+    })
+  }
+
+  private resubscribeTopics() {
+    if (!this.client) return
+
+    for (const topic of this.callbacks.keys()) {
+      this.subscribeTopic(topic)
+    }
+  }
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -34,6 +51,8 @@ class MQTTClientManager {
         this.client.on("connect", () => {
           console.log("[MQTT] Connected to broker")
           this.reconnectAttempts = 0
+          // Ensure all existing subscriptions are re-applied (covers initial connect and reconnect cases)
+          this.resubscribeTopics()
           resolve()
         })
 
@@ -76,13 +95,7 @@ class MQTTClientManager {
   subscribe(topic: string, callback: StatusCallback): () => void {
     if (!this.callbacks.has(topic)) {
       this.callbacks.set(topic, new Set())
-      this.client?.subscribe(topic, (err) => {
-        if (err) {
-          console.error(`[MQTT] Subscribe error for ${topic}:`, err)
-        } else {
-          console.log(`[MQTT] Subscribed to ${topic}`)
-        }
-      })
+      this.subscribeTopic(topic)
     }
 
     this.callbacks.get(topic)!.add(callback)
