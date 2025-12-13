@@ -73,8 +73,8 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
 
   const loadDeviceInfo = async (nId: number) => {
     try {
-      const [cats, types] = await Promise.all([apiClient.getDeviceCategories(nId), apiClient.getDeviceTypes(nId)])
-      setCategories(cats)
+      const types = await apiClient.getDeviceTypes(nId)
+      setCategories(Object.keys(types))
       setDeviceTypes(types)
     } catch (error) {
       console.error("Failed to load device info:", error)
