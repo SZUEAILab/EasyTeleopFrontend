@@ -38,6 +38,11 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
 
   useEffect(() => {
     if (open) {
+      // reset data when modal opens to avoid stale cross-modal data
+      setCategories([])
+      setDeviceTypes({})
+      setTestSuccess(false)
+
       if (device) {
         setSelectedNodeId(device.node_id)
         setFormData({
@@ -57,15 +62,14 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
           config: {},
         })
       }
-      setTestSuccess(false)
     }
   }, [open, device, nodeId])
 
   useEffect(() => {
-    if (selectedNodeId) {
+    if (open && selectedNodeId) {
       loadDeviceInfo(selectedNodeId)
     }
-  }, [selectedNodeId])
+  }, [open, selectedNodeId])
 
   const loadDeviceInfo = async (nId: number) => {
     try {

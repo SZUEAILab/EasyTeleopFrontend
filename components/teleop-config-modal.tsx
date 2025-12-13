@@ -43,6 +43,9 @@ export function TeleopConfigModal({
 
   useEffect(() => {
     if (open) {
+      // reset data when modal opens to avoid stale cross-modal data
+      setGroupTypes({})
+
       if (teleopGroup) {
         setSelectedNodeId(teleopGroup.node_id)
         setFormData({
@@ -64,10 +67,10 @@ export function TeleopConfigModal({
   }, [open, teleopGroup, nodeId])
 
   useEffect(() => {
-    if (selectedNodeId) {
+    if (open && selectedNodeId) {
       loadGroupTypes(selectedNodeId)
     }
-  }, [selectedNodeId])
+  }, [open, selectedNodeId])
 
   const loadGroupTypes = async (nId: number) => {
     try {
