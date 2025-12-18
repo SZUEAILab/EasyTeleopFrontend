@@ -1,4 +1,4 @@
-FROM node:18-bullseye AS builder
+FROM node:20-alpine AS builder
 
 # Build-time envs so Next.js can inline public config during `pnpm build`
 ARG NEXT_PUBLIC_API_URL
@@ -9,7 +9,8 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_MQTT_URL=${NEXT_PUBLIC_MQTT_URL} \
     NEXT_PUBLIC_MQTT_USERNAME=${NEXT_PUBLIC_MQTT_USERNAME} \
     NEXT_PUBLIC_MQTT_PASSWORD=${NEXT_PUBLIC_MQTT_PASSWORD} \
-    CI=true
+    CI=true \
+    NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 
@@ -17,21 +18,20 @@ COPY package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY . /app/
-RUN corepack enable && pnpm install --frozen-lockfile && pnpm build
+RUN pnpm build
 
-FROM node:18-bullseye
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
-COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
-
-RUN corepack enable && pnpm install --prod --frozen-lockfile
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["node", "server.js"]
