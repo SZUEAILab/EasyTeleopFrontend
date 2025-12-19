@@ -31,6 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useSidebar } from "@/components/sidebar-context"
+import cn from "classnames"
 
 function DeviceStatusCard({ device, nodeId }: { device: Device; nodeId: number }) {
   const status = useMqttDeviceStatus(nodeId, device.id)
@@ -203,6 +205,7 @@ export default function NodeDetailPage() {
   const [deletingDeviceId, setDeletingDeviceId] = useState<number | null>(null)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const { toast } = useToast()
+  const { isCollapsed } = useSidebar()
 
   // 使用MQTT获取节点状态
   const mqttNodeStatus = useMqttNodeStatus(nodeId)
@@ -353,7 +356,7 @@ export default function NodeDetailPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-56 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
           <Header />
           <main className="mt-14 p-6">
             <div className="flex items-center justify-center py-12">
@@ -372,7 +375,7 @@ export default function NodeDetailPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-56 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
           <Header />
           <main className="mt-14 p-6">
             <Card className="p-12">
@@ -395,7 +398,7 @@ export default function NodeDetailPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-56 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
         <Header />
         <main className="mt-14 p-6">
           {/* 返回按钮和节点信息 */}

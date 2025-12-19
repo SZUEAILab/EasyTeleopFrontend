@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useMqttNodeStatus } from "@/hooks/use-mqtt-status"
+import { useSidebar } from "@/components/sidebar-context"
+import cn from "classnames"
 
 function NodeCard({ node }: { node: Node }) {
   const router = useRouter()
@@ -72,6 +74,7 @@ export default function NodesPage() {
   const [newNodeUuid, setNewNodeUuid] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const { toast } = useToast()
+  const { isCollapsed } = useSidebar()
 
   useEffect(() => {
     loadNodes()
@@ -126,7 +129,7 @@ export default function NodesPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-56 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
           <Header />
           <main className="mt-14 p-6">
             <div className="flex items-center justify-center py-12">
@@ -144,7 +147,7 @@ export default function NodesPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-56 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
         <Header />
         <main className="mt-14 p-6">
           <div className="mb-6 flex items-center justify-between">

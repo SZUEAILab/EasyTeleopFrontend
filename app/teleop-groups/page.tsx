@@ -22,6 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useSidebar } from "@/components/sidebar-context"
+import cn from "classnames"
 
 function DeviceStatusCard({ device, nodeId }: { device: Device; nodeId: number }) {
   // 使用MQTT状态替代数据库状态
@@ -68,7 +70,7 @@ function TeleopGroupCard({
   const isRunning = runningStatus === 1
   const isCollecting = collectingStatus === 1
   const groupDevices = devices.filter((d) => group.config.includes(d.id))
-  
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   return (
@@ -139,7 +141,12 @@ function TeleopGroupCard({
               {actionLoading === group.id ? "停止中..." : "停止"}
             </Button>
           ) : (
-            <Button size="sm" className="flex-1" onClick={() => onStart(group.id)} disabled={actionLoading === group.id}>
+            <Button
+              size="sm"
+              className="flex-1"
+              onClick={() => onStart(group.id)}
+              disabled={actionLoading === group.id}
+            >
               <Play className="mr-1 h-3 w-3" />
               {actionLoading === group.id ? "启动中..." : "启动"}
             </Button>
@@ -152,21 +159,19 @@ function TeleopGroupCard({
           </Button>
         </div>
       </Card>
-      
+
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除遥操组 "{group.name}" 吗？此操作无法撤销。
-            </AlertDialogDescription>
+            <AlertDialogDescription>确定要删除遥操组 "{group.name}" 吗？此操作无法撤销。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                onDelete(group.id);
-                setShowDeleteDialog(false);
+                onDelete(group.id)
+                setShowDeleteDialog(false)
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -189,6 +194,7 @@ export default function TeleopGroupsPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<number | undefined>()
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const { toast } = useToast()
+  const { isCollapsed } = useSidebar()
 
   useEffect(() => {
     loadData()
@@ -292,7 +298,7 @@ export default function TeleopGroupsPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-56 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
           <Header />
           <main className="mt-14 p-6">
             <div className="flex items-center justify-center py-12">
@@ -310,7 +316,7 @@ export default function TeleopGroupsPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-56 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
         <Header />
         <main className="mt-14 p-6">
           <div className="mb-6 flex items-center justify-between">

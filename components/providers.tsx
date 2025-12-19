@@ -5,6 +5,7 @@ import type React from "react"
 import { useEffect } from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { mqttClient } from "@/lib/mqtt-client"
+import { SidebarProvider } from "@/components/sidebar-context"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -20,9 +21,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <>
+    <SidebarProvider>
       {children}
       <Toaster />
-    </>
+    </SidebarProvider>
   )
 }

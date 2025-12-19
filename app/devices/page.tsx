@@ -21,6 +21,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { RealTimeDeviceCard } from "@/components/real-time-device-card"
+import { useSidebar } from "@/components/sidebar-context"
+import cn from "classnames"
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([])
@@ -32,7 +34,7 @@ export default function DevicesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingDeviceId, setDeletingDeviceId] = useState<number | null>(null)
   const { toast } = useToast()
-
+  const { isCollapsed } = useSidebar()
 
   useEffect(() => {
     loadData()
@@ -94,12 +96,11 @@ export default function DevicesPage() {
     }
   }
 
-
   if (loading) {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-56 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
           <Header />
           <main className="mt-14 p-6">
             <div className="flex items-center justify-center py-12">
@@ -117,7 +118,7 @@ export default function DevicesPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-56 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
         <Header />
         <main className="mt-14 p-6">
           <div className="mb-6 flex items-center justify-between">
@@ -134,8 +135,8 @@ export default function DevicesPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {devices.map((device) => {
               return (
-                <RealTimeDeviceCard 
-                  key={device.id} 
+                <RealTimeDeviceCard
+                  key={device.id}
                   device={device}
                   onEdit={handleEditDevice}
                   onDelete={handleDeleteDevice}

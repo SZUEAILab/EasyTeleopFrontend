@@ -12,6 +12,8 @@ import { VideoPlaybackModal } from "@/components/video-playback-modal"
 import { apiClient } from "@/lib/api-client"
 import { mqttClient } from "@/lib/mqtt-client"
 import { useToast } from "@/hooks/use-toast"
+import cn from "classnames"
+import { useSidebar } from "@/components/sidebar-context"
 import type { TeleopGroup, Recording } from "@/lib/types"
 
 export default function DataManagementPage() {
@@ -22,6 +24,7 @@ export default function DataManagementPage() {
   const [playbackOpen, setPlaybackOpen] = useState(false)
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
   const { toast } = useToast()
+  const { isCollapsed } = useSidebar()
 
   useEffect(() => {
     loadData()
@@ -126,9 +129,9 @@ export default function DataManagementPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-64 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", "md:ml-16 md:" + (isCollapsed ? "ml-16" : "ml-56"))}>
           <Header />
-          <main className="mt-16 p-6">
+          <main className="mt-14 p-4 md:p-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -146,9 +149,9 @@ export default function DataManagementPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-64 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", "md:ml-16 md:" + (isCollapsed ? "ml-16" : "ml-56"))}>
         <Header />
-        <main className="mt-16 p-6">
+        <main className="mt-14 p-4 md:p-6">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-foreground">数据管理</h1>
