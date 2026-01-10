@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import type { Device, TeleopGroup, Node } from "@/lib/types"
 import { mqttClient } from "@/lib/mqtt-client"
 import cn from "classnames"
+import { useSidebar } from "@/components/sidebar-context"
 
 export default function DashboardPage() {
   const [devices, setDevices] = useState<Device[]>([])
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [onlineNodes, setOnlineNodes] = useState(0)
   const { toast } = useToast()
+  const { isCollapsed } = useSidebar()
 
   useEffect(() => {
     loadData()
@@ -73,9 +75,9 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-56 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
           <Header />
-          <main className="mt-14 p-6">
+          <main className="mt-14 p-4 md:p-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -91,10 +93,10 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-56 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
         <Header />
-        <main className="mt-14 p-6">
-          <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <main className="mt-14 p-4 md:p-6">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
