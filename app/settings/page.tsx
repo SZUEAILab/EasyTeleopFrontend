@@ -6,12 +6,16 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { config } from "@/lib/config"
+import { useSidebar } from "@/components/sidebar-context"
+import cn from "classnames"
 
 export default function SettingsPage() {
+  const { isCollapsed } = useSidebar()
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-56 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
         <Header />
         <main className="mt-14 p-6">
           <div className="mb-6">

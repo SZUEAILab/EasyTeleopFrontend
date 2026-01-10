@@ -10,23 +10,11 @@ import { apiClient } from "@/lib/api-client"
 import { config } from "@/lib/config"
 import { useToast } from "@/hooks/use-toast"
 import type { Device } from "@/lib/types"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import {
   AlertDialog,
@@ -38,6 +26,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useSidebar } from "@/components/sidebar-context"
+import cn from "classnames"
 
 interface VRHeadset {
   id: number
@@ -62,6 +52,7 @@ export default function VRHeadsetsPage() {
     info: "",
   })
   const { toast } = useToast()
+  const { isCollapsed } = useSidebar()
 
   useEffect(() => {
     loadData()
@@ -73,10 +64,10 @@ export default function VRHeadsetsPage() {
       // 获取VR头显列表
       const headsetsResponse = await fetch(`${config.apiUrl}/api/vrs`)
       const headsetsData: VRHeadset[] = await headsetsResponse.json()
-      
+
       // 获取所有设备
       const devicesData = await apiClient.getDevices()
-      
+
       setHeadsets(headsetsData)
       setDevices(devicesData)
     } catch (error) {
@@ -147,7 +138,7 @@ export default function VRHeadsetsPage() {
   const handleSubmit = async () => {
     try {
       const info = formData.info ? JSON.parse(formData.info) : {}
-      
+
       if (editingHeadset) {
         // 更新VR头显
         const response = await fetch(`${config.apiUrl}/api/vrs/${editingHeadset.id}`, {
@@ -157,15 +148,15 @@ export default function VRHeadsetsPage() {
           },
           body: JSON.stringify({
             uuid: formData.uuid,
-            device_id: formData.device_id ? parseInt(formData.device_id) : null,
+            device_id: formData.device_id ? Number.parseInt(formData.device_id) : null,
             info,
           }),
         })
-        
+
         if (!response.ok) {
           throw new Error("更新失败")
         }
-        
+
         toast({
           title: "更新成功",
           description: "VR头显配置已更新",
@@ -182,17 +173,17 @@ export default function VRHeadsetsPage() {
             info,
           }),
         })
-        
+
         if (!response.ok) {
           throw new Error("创建失败")
         }
-        
+
         toast({
           title: "创建成功",
           description: "VR头显已添加",
         })
       }
-      
+
       setDialogOpen(false)
       loadData()
     } catch (error) {
@@ -208,7 +199,7 @@ export default function VRHeadsetsPage() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="ml-56 flex-1">
+        <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
           <Header />
           <main className="mt-14 p-6">
             <div className="flex items-center justify-center py-12">
@@ -226,7 +217,7 @@ export default function VRHeadsetsPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="ml-56 flex-1">
+      <div className={cn("flex-1 transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-56")}>
         <Header />
         <main className="mt-14 p-6">
           <div className="mb-6 flex items-center justify-between">
@@ -242,7 +233,7 @@ export default function VRHeadsetsPage() {
 
           <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {headsets.map((headset) => {
-              const device = devices.find(d => d.id === headset.device_id)
+              const device = devices.find((d) => d.id === headset.device_id)
               return (
                 <Card key={headset.uuid} className="p-6">
                   <div className="flex items-start justify-between">
@@ -251,17 +242,11 @@ export default function VRHeadsetsPage() {
                         <Bot className="h-6 w-6 text-blue-500" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-foreground">
-                          {headset.uuid.substring(0, 8)}...
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          {device ? device.name : "未绑定设备"}
-                        </p>
+                        <h3 className="font-medium text-foreground">{headset.uuid.substring(0, 8)}...</h3>
+                        <p className="text-xs text-muted-foreground">{device ? device.name : "未绑定设备"}</p>
                       </div>
                     </div>
-                    <Badge variant={device ? "default" : "outline"}>
-                      {device ? "已绑定" : "未绑定"}
-                    </Badge>
+                    <Badge variant={device ? "default" : "outline"}>{device ? "已绑定" : "未绑定"}</Badge>
                   </div>
 
                   <div className="mt-4 space-y-2">
@@ -271,7 +256,7 @@ export default function VRHeadsetsPage() {
                       <div>创建时间: {new Date(headset.created_at).toLocaleString()}</div>
                       <div>更新时间: {new Date(headset.updated_at).toLocaleString()}</div>
                     </div>
-                    
+
                     {Object.keys(headset.info).length > 0 && (
                       <div className="text-xs text-muted-foreground">
                         <div>配置信息:</div>
@@ -285,10 +270,10 @@ export default function VRHeadsetsPage() {
                   </div>
 
                   <div className="mt-4 flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 bg-transparent"
                       onClick={() => handleEditHeadset(headset)}
                     >
                       配置
@@ -296,7 +281,7 @@ export default function VRHeadsetsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="flex-1 bg-transparent"
                       onClick={() => handleDeleteHeadset(headset.id)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -322,9 +307,7 @@ export default function VRHeadsetsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {editingHeadset ? "编辑VR头显" : "添加VR头显"}
-            </DialogTitle>
+            <DialogTitle>{editingHeadset ? "编辑VR头显" : "添加VR头显"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -355,7 +338,6 @@ export default function VRHeadsetsPage() {
                       {device.name} ({device.category})
                     </SelectItem>
                   ))}
-
                 </SelectContent>
               </Select>
             </div>
@@ -369,9 +351,7 @@ export default function VRHeadsetsPage() {
                 placeholder='{ "ip": "192.168.1.100" }'
                 rows={4}
               />
-              <p className="text-xs text-muted-foreground">
-                以JSON格式输入配置信息
-              </p>
+              <p className="text-xs text-muted-foreground">以JSON格式输入配置信息</p>
             </div>
           </div>
 
@@ -379,9 +359,7 @@ export default function VRHeadsetsPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               取消
             </Button>
-            <Button onClick={handleSubmit}>
-              确定
-            </Button>
+            <Button onClick={handleSubmit}>确定</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -390,9 +368,7 @@ export default function VRHeadsetsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              您确定要删除这个VR头显吗？此操作无法撤销。
-            </AlertDialogDescription>
+            <AlertDialogDescription>您确定要删除这个VR头显吗？此操作无法撤销。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
