@@ -1,6 +1,6 @@
-# EasyTeleop - 机器人遥操控制平台
+# EasyTeleop Frontend
 
-现代化的机器人远程遥操作控制平台，采用 Apple 设计风格，提供设备管理、数据录制和远程教学功能。
+机器人遥操控制平台前端（Next.js）。
 
 ## 功能特性
 
@@ -38,16 +38,16 @@
 
 创建 `.env.local` 文件：
 
-\`\`\`env
+```env
 NEXT_PUBLIC_API_URL=http://121.43.162.224:8000
 NEXT_PUBLIC_MQTT_URL=ws://121.43.162.224:8083/mqtt
 NEXT_PUBLIC_MQTT_USERNAME=
 NEXT_PUBLIC_MQTT_PASSWORD=
-\`\`\`
+```
 
 ## 开发指南
 
-\`\`\`bash
+```bash
 # 安装依赖
 npm install
 
@@ -59,11 +59,11 @@ npm run build
 
 # 启动生产服务器
 npm start
-\`\`\`
+```
 
 ## 项目结构
 
-\`\`\`
+```
 ├── app/                    # Next.js 页面
 │   ├── page.tsx           # 设备管理
 │   ├── data/              # 数据管理
@@ -81,7 +81,7 @@ npm start
 │   └── config.ts         # 配置管理
 └── hooks/                 # 自定义 Hooks
     └── use-mqtt-status.ts # MQTT 状态 Hook
-\`\`\`
+```
 
 ## API 集成
 
@@ -100,21 +100,3 @@ npm start
 - `node/{id}/teleop-group/{id}/status` - 遥操组状态
 - `node/{id}/teleop-group/{id}/collecting` - 采集状态
 
-## 设计理念
-
-- **Apple 风格**: 简洁、优雅、专注于内容
-- **响应式设计**: 适配各种屏幕尺寸
-- **实时更新**: MQTT 直连减少后端压力
-- **类型安全**: 完整的 TypeScript 类型定义
-- **可维护性**: 模块化组件和清晰的代码结构
-
-## 浏览器支持
-
-- Chrome/Edge (最新版本)
-- Firefox (最新版本)
-- Safari (最新版本)
-
-## 许可证
-
-© 2025 SZUEAILab
-\`\`\`
