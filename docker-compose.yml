@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_MQTT_URL: ${NEXT_PUBLIC_MQTT_URL:-ws://localhost:8083/mqtt}
+        NEXT_PUBLIC_MQTT_USERNAME: ${NEXT_PUBLIC_MQTT_USERNAME:-}
+        NEXT_PUBLIC_MQTT_PASSWORD: ${NEXT_PUBLIC_MQTT_PASSWORD:-}
+    image: easyteleop/frontend
+    container_name: easyteleop-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_MQTT_URL=${NEXT_PUBLIC_MQTT_URL:-ws://localhost:8083/mqtt}
+      - NEXT_PUBLIC_MQTT_USERNAME=${NEXT_PUBLIC_MQTT_USERNAME:-}
+      - NEXT_PUBLIC_MQTT_PASSWORD=${NEXT_PUBLIC_MQTT_PASSWORD:-}
+    restart: unless-stopped
