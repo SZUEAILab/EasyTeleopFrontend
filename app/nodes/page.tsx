@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Server, Wifi, WifiOff, Settings } from "lucide-react"
+import { Plus, Server, Wifi, WifiOff, Settings, Trash2 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import type { Node } from "@/lib/types"
@@ -18,13 +18,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useMqttNodeStatus } from "@/hooks/use-mqtt-status"
 import { useSidebar } from "@/components/sidebar-context"
 import cn from "classnames"
 
-function NodeCard({ node }: { node: Node }) {
+function NodeCard({ node, onDelete }: { node: Node; onDelete: (id: number) => void }) {
   const router = useRouter()
   const mqttStatus = useMqttNodeStatus(node.id)
   const isOnline = mqttStatus === 1
@@ -61,6 +71,14 @@ function NodeCard({ node }: { node: Node }) {
             <Settings className="mr-1 h-3 w-3" />
             管理
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => onDelete(node.id)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
       </div>
     </Card>
@@ -73,6 +91,8 @@ export default function NodesPage() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [newNodeUuid, setNewNodeUuid] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingNodeId, setDeletingNodeId] = useState<number | null>(null)
   const { toast } = useToast()
   const { isCollapsed } = useSidebar()
 
@@ -125,6 +145,33 @@ export default function NodesPage() {
     }
   }
 
+  const handleDeleteNode = (id: number) => {
+    setDeletingNodeId(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteNode = async () => {
+    if (!deletingNodeId) return
+
+    try {
+      await apiClient.deleteNode(deletingNodeId)
+      toast({
+        title: "删除成功",
+        description: "节点已删除",
+      })
+      loadNodes()
+    } catch (error) {
+      toast({
+        title: "删除失败",
+        description: error instanceof Error ? error.message : "未知错误",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeletingNodeId(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen">
@@ -163,7 +210,7 @@ export default function NodesPage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {nodes.map((node) => (
-              <NodeCard key={node.id} node={node} />
+              <NodeCard key={node.id} node={node} onDelete={handleDeleteNode} />
             ))}
           </div>
 
@@ -206,6 +253,21 @@ export default function NodesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作不可撤销，确定要删除该节点吗？删除节点将同时删除该节点下的所有设备和遥操组。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteNode}>确认</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

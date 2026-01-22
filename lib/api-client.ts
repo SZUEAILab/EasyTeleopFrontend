@@ -57,7 +57,7 @@ class ApiClient {
   }
 
   async registerNode(uuid: string): Promise<{ id: number }> {
-    return this.request<{ id: number }>("/api/node", {
+    return this.request<{ id: number }>("/api/nodes", {
       method: "POST",
       body: JSON.stringify({ uuid }),
     })
@@ -78,6 +78,12 @@ class ApiClient {
       body: JSON.stringify(body),
     })
     return response.result
+  }
+
+  async deleteNode(id: number): Promise<void> {
+    return this.request<void>(`/api/nodes/${id}`, {
+      method: "DELETE",
+    })
   }
 
   // Device APIs
