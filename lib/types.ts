@@ -6,6 +6,10 @@ export interface Node {
   updated_at: string
 }
 
+export type JsonPrimitive = string | number | boolean | null
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+export type JsonType = "string" | "number" | "boolean" | "object" | "array" | "null"
+
 export interface Device {
   id: number
   node_id: number
@@ -13,7 +17,7 @@ export interface Device {
   description: string
   category: "VR" | "Robot" | "Camera"
   type: string
-  config: Record<string, any>
+  config: Record<string, JsonValue>
   status: 0 | 1 | 2 // 0=未启动, 1=已连接, 2=重连中
   created_at: string
   updated_at: string
@@ -25,9 +29,9 @@ export interface DeviceTypeInfo {
   need_config: Record<
     string,
     {
-      type: string
+      type: JsonType | "int" | "integer" | "float" | "double" | "bool" | "boolean" | string
       description: string
-      default?: any
+      default?: JsonValue
     }
   >
 }
