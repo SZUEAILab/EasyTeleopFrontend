@@ -155,12 +155,12 @@ export function TeleopConfigModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-3xl flex-col sm:w-auto">
         <DialogHeader>
           <DialogTitle>{teleopGroup ? "编辑遥操作组" : "创建遥操作组"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
           {showNodeSelector && (
             <div className="space-y-2">
               <Label htmlFor="node">所属节点 *</Label>
@@ -185,7 +185,7 @@ export function TeleopConfigModal({
               </Select>
               {selectedNodeId && (
                 <p className="text-xs text-muted-foreground">
-                  当前节点设备数: {devices.filter((d) => d.node_id === selectedNodeId).length}
+                  当前节点设备�? {devices.filter((d) => d.node_id === selectedNodeId).length}
                 </p>
               )}
             </div>

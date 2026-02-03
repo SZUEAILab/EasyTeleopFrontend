@@ -402,12 +402,12 @@ export function DeviceConfigModal({ open, onOpenChange, device, nodeId, nodes, o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-2xl flex-col sm:w-auto">
         <DialogHeader>
           <DialogTitle>{device ? "编辑设备" : "添加设备"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
           {showNodeSelector && (
             <div className="space-y-2">
               <Label htmlFor="node">所属节点 *</Label>
